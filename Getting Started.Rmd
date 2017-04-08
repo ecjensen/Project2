@@ -1,0 +1,278 @@
+---
+title: "Final Project"
+author: "Eric Jensen"
+date: "April 5, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Cleaning up data (Given by Sanjeev)
+```{r}
+speed <- read.csv("Speed Dating Data.csv")
+speed$condtn <- as.factor(speed$condtn)
+speed$gender <- as.factor(speed$gender)
+speed$match <- as.factor(speed$match)
+speed$field_cd <- as.factor(speed$field_cd)
+levels(speed$field_cd) <- c("Law","Math","SocScie/Psych", "MedSci", "Engineering", "English", "History", "Business", "Education", "Bio","SocialWork","Undergrad", "PoliSci", "Film","FineArts","Lang","Architecture","Other")
+speed$race <- as.factor(speed$race)
+speed$goal <- as.factor(speed$goal)
+levels(speed$goal) <- c("FunNightOut", "MeetNewPpl", "GetADate","SRSRelationship", "ToSayIDidIt","Other")
+speed$date <- as.factor(speed$date)
+levels(speed$date) <- c("SVRL/Week","2/Week","1/Week","2/Month", "1/Month", "SVRL/Year", "AlmostNever")
+speed$go_out <- as.factor(speed$go_out)
+levels(speed$go_out) <- c("SVRL/Week","2/Week","1/Week","2/Month", "1/Month", "SVRL/Year", "AlmostNever")
+speed$career_c <-as.factor(speed$career_c)
+levels(speed$career_c) <- c("Lawyer","Academic/Research","Psychologist","DocMed", "Engineer", "Entertainment", "Banking/Consulting", "RealEstate","IntlAffairs","Undecided","SocialWork","SpeechPath","Politics", "ProSports", "Other", "Journalism", "Architecture")
+speed$race_o <-as.factor(speed$race_o) 
+speed$dec_o <- as.factor(speed$dec_o)
+speed$samerace <- as.factor(speed$samerace)
+
+sd2 <- speed
+sd2 <- sd2[ , -1] #IID  
+sd2 <- sd2[, -1] #ID  
+sd2 <- sd2[, -2] #IDG
+sd2 <- sd2[, -3] #Wave
+sd2 <- sd2[, -3] #Round
+sd2 <- sd2[, -3] #Position
+sd2 <- sd2[, -3] #Postion1
+sd2 <- sd2[, -4] #Partner 
+sd2 <- sd2[, -4] #PID
+sd2 <- sd2[, -26]#Field
+sd2 <- sd2[, -(27:29)]#Academics
+sd2 <- sd2[,-(30:32)]#Socioeconomic 
+sd2 <- sd2[,-33]#Career
+sd2 <- sd2[,-(59:64)]#What others look for
+sd2 <- sd2[,-(70:74)]#Others perception
+sd2 <- sd2[,-(81:92)]#Data gathered after intitial
+sd2 <- sd2[,(1:79)]
+sd2 <- sd2[,-(70:79)] #Removes Post First Date
+sd2 <- sd2[,-52]#exclude expnum
+
+sdrandom <- sd2[sample(nrow(sd2), nrow(sd2)),] #Get a random sample since the data is organized by participant
+
+sdclean <- na.omit(sdrandom) #Remove rows with NA values to create a "clean" set
+
+train <- sdclean[1:5199, ]
+test <- sdclean[5200:6499, ]
+```
+
+#Variable exploration
+```{r}
+explore <- sdclean
+names(explore)
+
+explore$gender <- factor(explore$gender, levels = c(0, 1), labels = c("Female", "Male"))
+
+plot(explore$gender, col = "blue")
+table(explore$gender)
+prop.table(table(explore$gender))
+
+explore$condtn <- factor(explore$condtn, levels = c(1, 2), labels = c("Limited", "Extensive"))
+
+plot(explore$condtn, col = "blue", main = "Condition")
+table(explore$condtn)
+prop.table(table(explore$condtn))
+
+plot(factor(explore$order), main = "Number of dates that night when met partner")
+
+explore$match <- factor(explore$match, levels = c(0, 1), labels = c("No", "Yes"))
+
+plot(explore$match, col = "blue", main = "Did they match?")
+table(explore$match)
+prop.table(table(explore$match))
+
+hist(explore$int_corr, main = "Correlation between interest ratings (Time = 1)", col = "blue")
+
+explore$samerace <- factor(explore$samerace, levels = c(0, 1), labels = c("No", "Yes"))
+
+plot(explore$samerace, col = "blue", main = "Same race")
+table(explore$samerace)
+prop.table(table(explore$samerace))
+
+data.same <- subset(explore, samerace == "Yes")
+data.not <- subset(explore, samerace == "No")
+
+plot(data.same$match, col = "blue", main = "Given same race, did they match?")
+table(data.same$match)
+prop.table(table(data.same$match))
+
+plot(data.not$match, col = "blue", main = "Given not same race, did they match?")
+table(data.not$match)
+prop.table(table(data.not$match))
+
+plot(factor(explore$age_o), main = "Age distribution of partner", col = "blue")
+
+explore$race_o <- factor(explore$race_o, levels = c(1, 2, 3, 4, 5, 6), labels = c("Black", "White", "Latino", "Asian", "Native American", "Other"))
+
+plot(explore$race_o, col = "blue", main = "Race distribution of partner")
+table(explore$race_o)
+prop.table(table(explore$race_o))
+
+hist(explore$pf_o_att, main = "Partners stated preference of attractiveness")
+hist(explore$pf_o_sin, main = "Partners stated preference of Sincere")
+hist(explore$pf_o_int, main = "Partners stated preference of intelligence")
+hist(explore$pf_o_fun, main = "Partners stated preference of funnes")
+hist(explore$pf_o_amb, main = "Partners stated preference of ambition")
+hist(explore$pf_o_sha, main = "Partners stated preference of sharing")
+
+explore$dec_o <- factor(explore$dec_o, levels = c(0, 1), labels = c("No", "Yes"))
+
+plot(explore$dec_o, col = "blue", main = "Decision at the end of the night")
+table(explore$dec_o)
+prop.table(table(explore$dec_o))
+
+hist(explore$attr_o, main = "Rating of partner's attractiveness")
+hist(explore$sinc_o, main = "Rating of partner's sincere")
+hist(explore$intel_o, main = "Rating of partner's intelligence")
+hist(explore$fun_o, main = "Rating of partner's funness")
+hist(explore$amb_o, main = "Rating of partner's ambition")
+hist(explore$shar_o, main = "Rating of partner's sharing?")
+hist(explore$like_o, main = "Rating of how much they liked the partner")
+hist(explore$prob_o, main = "How likely the other person says yes to you")
+
+explore$met_o <- factor(explore$met_o, levels = c(1, 2), labels = c("No", "Yes"))
+
+plot(explore$met_o, col = "blue", main = "Whether they already met")
+table(explore$met_o)
+prop.table(table(explore$met_o))
+
+plot(factor(explore$age), main = "Age distribution", col = "blue")
+
+plot(factor(explore$field_cd), main = "Field of study", las = 2)
+
+explore$race <- factor(explore$race, levels = c(1, 2, 3, 4, 5, 6), labels = c("Black", "White", "Latino", "Asian", "Native American", "Other"))
+
+plot(explore$race, col = "blue", main = "Race distribution")
+table(explore$race)
+prop.table(table(explore$race))
+
+hist(explore$imprace, main = "Importance of being same race?")
+hist(explore$imprelig, main = "Importance of being same race?")
+
+plot(factor(explore$goal), main = "Goal for the night", las = 2)
+table(factor(explore$goal))
+prop.table(table(factor(explore$goal)))
+
+plot(factor(explore$date), main = "Dating frequency", las = 2)
+
+plot(factor(explore$career_c), main = "Career", las = 2)
+
+hist(explore$sports, main = "How intrested are you in playing sports")
+hist(explore$tvsports, main = "How intrested are you in watching sports")
+hist(explore$exercise, main = "How intrested are you in excerise")
+hist(explore$dining, main = "How intrested are you in dining?")
+hist(explore$museums, main = "How intrested are you in museums")
+hist(explore$art, main = "How intrested are you in art")
+hist(explore$hiking, main = "How intrested are you in hiking")
+hist(explore$gaming, main = "How intrested are you in gaming")
+hist(explore$clubbing, main = "How intrested are you in clubbing")
+hist(explore$reading, main = "How intrested are you in reading")
+hist(explore$tv, main = "How intrested are you in  tv")
+hist(explore$theater, main = "How intrested are you in theater")
+hist(explore$movies, main = "How intrested are you in movies")
+hist(explore$concerts, main = "How intrested are you in concerts")
+hist(explore$music, main = "How intrested are you in  music")
+hist(explore$shopping, main = "How intrested are you in shopping")
+hist(explore$yoga, main = "How intrested are you in yoga")
+hist(explore$exphappy, main = "How happy do you expect to be with the people you meet?")
+
+
+```
+
+#Setting up data for SVM
+```{r}
+data1 <- as.data.frame(model.matrix(~.-1, data = sdclean))
+data1$match2 <- as.factor(data1$match1)
+data1$match <- NULL
+View(data1)
+d_train <- data1[1:5199, ]
+d_test <- data1[5200:6499, ]
+
+library(kernlab)
+
+```
+
+#Running SVM 
+```{r}
+svm_classifier <- ksvm(match2~ ., data = d_train, kernel = "rbfdot")
+svm_predictions <- predict(svm_classifier, d_test)
+
+svm_agreement <- svm_predictions == d_test$match2
+table(svm_agreement)
+
+prop.table(table(svm_agreement))
+
+svm_classifier1 <- ksvm(match2~ ., data = d_train, kernel = "vanilladot")
+svm_predictions1 <- predict(svm_classifier1, d_test)
+
+svm_agreement1 <- svm_predictions1 == d_test$match2
+table(svm_agreement1)
+
+prop.table(table(svm_agreement1))
+
+```
+
+#Running logistic regressions
+
+##Setting up data for logistic regression
+```{r}
+dummy <- model.matrix(~gender + condtn + match + samerace + race_o + dec_o + field_cd + race + goal + date + go_out + career_c, data = sdclean)
+
+updated <- cbind(sdclean, dummy)
+updated <- updated[, -(30:33)] #removes goal, date, go_out, career_c
+updated <- updated[, -(26:27)]#removes field_cd race
+updated <- updated[, -15]#removes dec_o
+updated <- updated[, -8]#removes race_o
+updated <- updated[,  -6]#removes samerace
+updated <- updated[, -4]#removes match
+updated <- updated[, -(1:2)]#removes gender condtn
+
+View(updated)
+
+str(updated)
+train <- updated[1:5199, ]
+test <- updated[5200:6499, ]
+```
+
+
+##Regression models
+```{r}
+model <- glm(match1 ~., data = train)
+prediction <- predict(model, test)
+prediction <- as.data.frame(prediction)
+results <- ifelse(prediction< .5, 0, 1)
+agreement <- results == test$match1
+table(agreement)
+prop.table(table(agreement))
+
+model1 <- glm(formula = match1 ~ int_corr + age_o + pf_o_sin + pf_o_sha + 
+    sinc_o + fun_o + like_o + prob_o + met_o + imprace + sports + 
+    exercise + museums + art + gaming + clubbing + tv + theater + 
+    movies + shopping + yoga + exphappy + attr1_1 + shar1_1 + 
+    attr2_1 + intel2_1 + amb3_1 + gender1 + race_o2 + race_o4 + 
+    race_o6 + dec_o1 + field_cdMedSci + field_cdBusiness + field_cdSocialWork + 
+    field_cdUndergrad + field_cdPoliSci + field_cdFineArts + 
+    race2 + race3 + race4 + goalMeetNewPpl + `date2/Week` + `date1/Week` + 
+    `date2/Month` + `go_out2/Week` + `go_out1/Week` + `career_cAcademic/Research` + 
+    career_cPsychologist + career_cEntertainment + `career_cBanking/Consulting` + 
+    career_cIntlAffairs + career_cSocialWork + career_cProSports, 
+    data = train)
+prediction1 <- predict(model1, test)
+prediction1 <- as.data.frame(prediction1)
+results1 <- ifelse(prediction< .5, 0, 1)
+agreement1 <- results1 == test$match1
+table(agreement1)
+prop.table(table(agreement1))
+
+model2 <- glm(match1 ~. + .*., data = train)
+prediction2 <- predict(model2, test)
+prediction2 <- as.data.frame(prediction2)
+results2 <- ifelse(prediction< .5, 0, 1)
+agreement2 <- results == test$match1
+table(agreement2)
+prop.table(table(agreement2))
+```
+
