@@ -186,7 +186,7 @@ hist(explore$exphappy, main = "How happy do you expect to be with the people you
 ```{r}
 data1 <- as.data.frame(model.matrix(~.-1, data = sdclean))
 data1$match2 <- as.factor(data1$match1)
-data1$match <- NULL
+data1$match1 <- NULL
 View(data1)
 d_train <- data1[1:5199, ]
 d_test <- data1[5200:6499, ]
