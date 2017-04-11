@@ -51,12 +51,228 @@ sd2 <- sd2[,(1:79)]
 sd2 <- sd2[,-(70:79)] #Removes Post First Date
 sd2 <- sd2[,-52]#exclude expnum
 
-sdrandom <- sd2[sample(nrow(sd2), nrow(sd2)),] #Get a random sample since the data is organized by participant
+sd3 <- cbind(sd2, speed[, 6])
+sdrandom <- sd3[sample(nrow(sd3), nrow(sd3)),] #Get a random sample since the data is organized by participant
 
 sdclean <- na.omit(sdrandom) #Remove rows with NA values to create a "clean" set
 
+names(sdclean)[69] <- "wave"
+sdclean[, 69] <- as.factor(sdclean[, 69])
+
+nrow(sdclean)
+
+sdclean$wave<- factor(sdclean$wave, levels = c(5, 5, 6, 6, 6, 2, 2, 3, 3, 4, 4, 5, 5, 5, 1, 1, 1, 3, 3, 3, 3), labels = c("October", "October", "November", "November", "November", "March", "March", "April", "April", "September", "September", "October", "October", "October", "February", "February", "February", "April", "April", "April", "April"))
+
+
 train <- sdclean[1:5199, ]
 test <- sdclean[5200:6499, ]
+```
+#Proportion of matches by month
+```{r}
+explore <- sdclean
+
+library(forcats)
+
+counts <- table(explore$match, explore$wave)
+#October whatever reason so adding it back in
+october <- counts[, 1:2]
+october <- october[,-2]
+counts <- cbind(counts, october)
+
+#Cleaning unused columns
+counts <- counts[, -(16:22)]
+counts <- counts[, -(11:14)]
+counts <- counts[, -9]
+counts <- counts[, -7]
+counts <- counts[, -5]
+counts <- counts[, -(4)]
+counts <- counts[, -2]
+counts <- data.frame(counts)
+
+#Creating month proportions
+November <- counts[2, "November"]/ (counts[1, "November"] + counts[2, "November"])
+March <- counts[2, "March"]/ (counts[2, "March"] + counts[1, "March"])
+April <- counts[2, "April"]/ (counts[2, "April" ] + counts[1, "April" ])
+September <- counts[2, "September"]/ (counts[2, "September" ] + counts[1, "September"])
+February <- counts[2, "February"]/ (counts[2, "February" ] + counts[1, "February" ])
+October <- counts[2, "October"]/ (counts[2, "February" ] + counts[1, "October" ])
+monthProp <- cbind(February, March, April, September, October, November)
+
+#Plotting total proportion of matches by month
+barplot(monthProp, main = "Proportion of matches by month", col = c("dark blue", "red"), legend = rownames(monthProp), las = 2)
+```
+February and October had significantly higher matching proportions. March and April appear to have the lowest matches.
+
+#Matching Male
+```{r}
+#Subsetting male
+Mexplore <- subset(sdclean, sdclean$gender == 1 )
+
+library(forcats)
+
+Mcounts <- table(Mexplore$match, Mexplore$wave)
+Moctober <- Mcounts[, 1:2]
+Moctober <- Moctober[,-2]
+
+Mcounts <- cbind(Mcounts, Moctober)
+
+#Cleaning unused columns
+Mcounts <- Mcounts[, -(16:22)]
+Mcounts <- Mcounts[, -(11:14)]
+Mcounts <- Mcounts[, -9]
+Mcounts <- Mcounts[, -7]
+Mcounts <- Mcounts[, -5]
+Mcounts <- Mcounts[, -(4)]
+Mcounts <- Mcounts[, -2]
+Mcounts <- data.frame(Mcounts)
+
+#Finding matching proportions by month
+MNovember <- Mcounts[2, "November"]/ (Mcounts[1, "November"] + Mcounts[2, "November"])
+MMarch <- Mcounts[2, "March"]/ (Mcounts[2, "March"] + Mcounts[1, "March"])
+MApril <- Mcounts[2, "April"]/ (Mcounts[2, "April" ] + Mcounts[1, "April" ])
+MSeptember <- Mcounts[2, "September"]/ (Mcounts[2, "September" ] + Mcounts[1, "September"])
+MFebruary <- Mcounts[2, "February"]/ (Mcounts[2, "February" ] + Mcounts[1, "February" ])
+MOctober <- Mcounts[2, "October"]/ (Mcounts[2, "February" ] + Mcounts[1, "October" ])
+MmonthProp <- cbind(MFebruary, MMarch, MApril, MSeptember, MOctober, MNovember)
+
+#Plotting male matching proportions by month
+barplot(MmonthProp, main = "Proportion of male matches by month", col = c("dark blue", "red"), legend = rownames(monthProp),  las = 2)
+```
+Just as with the aggregate, men are much more likely to match in February and October than any other month. On the otherhand, they appear to not match in November as often
+#Female matching
+```{r}
+Fexplore <- subset(sdclean, sdclean$gender == 0 )
+
+library(forcats)
+
+Fcounts <- table(Fexplore$match, Fexplore$wave)
+
+#Fixing October
+Foctober <- Fcounts[, 1:2]
+Foctober <- Foctober[,-2]
+Fcounts <- cbind(Fcounts, Foctober)
+
+#Cleaning unused columns
+Fcounts <- Fcounts[, -(16:22)]
+Fcounts <- Fcounts[, -(11:14)]
+Fcounts <- Fcounts[, -9]
+Fcounts <- Fcounts[, -7]
+Fcounts <- Fcounts[, -5]
+Fcounts <- Fcounts[, -(4)]
+Fcounts <- Fcounts[, -2]
+Fcounts <- data.frame(Fcounts)
+
+#Finding monthly matching proportions
+FNovember <- Fcounts[2, "November"]/ (Fcounts[1, "November"] + Fcounts[2, "November"])
+FMarch <- Fcounts[2, "March"]/ (Fcounts[2, "March"] + Fcounts[1, "March"])
+FApril <- Fcounts[2, "April"]/ (Fcounts[2, "April" ] + Fcounts[1, "April" ])
+FSeptember <- Fcounts[2, "September"]/ (Fcounts[2, "September" ] + Fcounts[1, "September"])
+FFebruary <- Fcounts[2, "February"]/ (Fcounts[2, "February" ] + Fcounts[1, "February" ])
+FOctober <- Fcounts[2, "October"]/ (Fcounts[2, "February" ] + Fcounts[1, "October" ])
+
+#Combining all months
+FmonthProp <- cbind(FFebruary, FMarch, FApril, FSeptember, FOctober, FNovember)
+
+#Plotting female matching proportion by month
+barplot(FmonthProp, main = "Proportion of matches by month", col = c("dark blue", "red"), legend = rownames(FmonthProp), las = 2)
+```
+Same trend as previous two graphs but women match proportionally more in November.
+
+```{r}
+#Plotting female and male matching proportions
+total <- rbind(MmonthProp, FmonthProp)
+barplot(total, main = "Proportion of matches by gender", col = c("dark blue", "red"), legend = rownames(monthProp), las = 2 )
+```
+A higher proportion of women find matches in almost every month.
+
+#Interest Correlation
+```{r}
+#Subsetting male and female
+female <- subset(explore, explore$gender == 0)
+male <- subset(explore, explore$gender == 1)
+
+#Historgram of interest correlation by gender and aggregate
+hist(explore$int_corr, main = "Correlation between interest ratings (Time = 1)", col = "blue")
+hist(female$int_corr, main = "Correlation between interest ratings (Time = 1)", col = "blue")
+hist(male$int_corr, main = "Correlation between interest ratings (Time = 1)", col = "blue")
+
+#Finding mean, 95 percentile, and 5th percentile for male and female interest correlation
+avgFemale <- mean(female$int_corr)
+avgMale <- mean(male$int_corr)
+highMale <- quantile(male$int_corr, .95)
+lowMale <- quantile(male$int_corr, .05)
+highFemale <- quantile(female$int_corr, .95)
+lowFemale <- quantile(female$int_corr, .05)
+
+#Subsetting by interest correlation
+highIntF <- subset(female, female$int_corr > avgFemale)
+lowIntF <- subset(female, female$int_corr < avgFemale)
+highIntM <- subset(male, male$int_corr > avgMale)
+lowIntM <- subset(male, male$int_corr < avgMale)
+vhighIntF <- subset(female, female$int_corr > highFemale)
+vlowIntF <- subset(female, female$int_corr < lowFemale)
+vhighIntM <- subset(male, male$int_corr > highMale)
+vlowIntM <- subset(male, male$int_corr < lowMale)
+
+#Establishing average for various interest correlation levels
+femaleAA <- mean(as.numeric(highIntF$match)-1)
+femaleBA <- mean(as.numeric(lowIntF$match)-1)
+maleAA <- mean(as.numeric(highIntM$match)-1)
+maleBA <- mean(as.numeric(lowIntM$match)-1)
+femaleHigh <- mean(as.numeric(vhighIntF$match)-1)
+femaleLow <- mean(as.numeric(vlowIntF$match)-1)
+maleHigh <- mean(as.numeric(vhighIntM$match)-1)
+maleLow <- mean(as.numeric(vlowIntM$match)-1)
+
+#Combining averages
+int_corr <- cbind(femaleAA, femaleBA, maleAA, maleBA, femaleHigh, femaleLow, maleHigh, maleLow)
+
+#Plotting various interest correlations
+barplot(int_corr, main = "Total match proportion by Interest Correlation", col = c("dark blue", "red"), legend = rownames(int_corr), las = 2 )
+```
+It appears that interest correlation does not do a great job of predicting whether or not a person matches. 
+
+#Predate attitude
+```{r}
+#Histogram of average expected happiness with partner
+hist(explore$exphappy, main = "How happy do you expect to be with the people you meet?")
+
+#Finding average, 95 percentile, and 5th percentile for both males and females
+avgM <- mean(male$exphappy)
+avgF <- mean(female$exphappy)
+highM <- quantile(male$exphappy, .95)
+lowM <- quantile(male$exphappy, .05)
+highF <- quantile(female$exphappy, .95)
+lowF <- quantile(female$exphappy, .05)
+
+#Subsetting by male and female expected happiness
+happyMale <- subset(male, male$exphappy > avgM)
+sadMale <- subset(male, male$exphappy < avgM)
+vhappyMale <- subset(male, male$exphappy > highM)
+vsadMale <- subset(male, male$exphappy < lowM)
+happyFemale <- subset(female, female$exphappy > avgF)
+sadFemale <- subset(female, female$exphappy < avgF)
+vhappyFemale <- subset(female, female$exphappy > highF)
+vsadFemale <- subset(female, female$exphappy <lowF)
+
+#Finding mean of for the various happiness levels
+hMale <- mean(as.numeric(happyMale$match) - 1)
+sMale <- mean(as.numeric(sadMale$match) - 1)
+vhMale <- mean(as.numeric(vhappyMale$match) - 1)
+vsMale <- mean(as.numeric(vsadMale$match) - 1)
+hFemale <- mean(as.numeric(happyFemale$match) - 1)
+sFemale <- mean(as.numeric(sadFemale$match) - 1)
+vFemale <- mean(as.numeric(vhappyFemale$match) - 1)
+vsFemale <- mean(as.numeric(vsadFemale$match) - 1)
+
+#Combining all previous variables
+expectedHappy <- cbind(hMale, sMale, vhMale, vsMale, hFemale, sFemale, vFemale, vsFemale)
+
+#Plotting various happiness levels
+barplot(expectedHappy, main = "Total match proportion by happiness", col = c("dark blue", "red"), legend = rownames(int_corr), las = 2 )
+```
+Men who go in expecting to be very happy with their partner are much more likely to match. Women who go into a date expecting to be very unsatisfied with the partners are much less likely to match. 
+
 ```
 
 #Variable exploration
