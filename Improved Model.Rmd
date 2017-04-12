@@ -1,0 +1,373 @@
+---
+title: "Final Project"
+author: "Eric Jensen"
+date: "April 5, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Cleaning up data (Given by Sanjeev)
+```{r}
+speed <- read.csv("Speed Dating Data.csv")
+speed$condtn <- as.factor(speed$condtn)
+speed$gender <- as.factor(speed$gender)
+speed$match <- as.factor(speed$match)
+speed$field_cd <- as.factor(speed$field_cd)
+levels(speed$field_cd) <- c("Law","Math","SocScie/Psych", "MedSci", "Engineering", "English", "History", "Business", "Education", "Bio","SocialWork","Undergrad", "PoliSci", "Film","FineArts","Lang","Architecture","Other")
+speed$race <- as.factor(speed$race)
+speed$goal <- as.factor(speed$goal)
+levels(speed$goal) <- c("FunNightOut", "MeetNewPpl", "GetADate","SRSRelationship", "ToSayIDidIt","Other")
+speed$date <- as.factor(speed$date)
+levels(speed$date) <- c("SVRL/Week","2/Week","1/Week","2/Month", "1/Month", "SVRL/Year", "AlmostNever")
+speed$go_out <- as.factor(speed$go_out)
+levels(speed$go_out) <- c("SVRL/Week","2/Week","1/Week","2/Month", "1/Month", "SVRL/Year", "AlmostNever")
+speed$career_c <-as.factor(speed$career_c)
+levels(speed$career_c) <- c("Lawyer","Academic/Research","Psychologist","DocMed", "Engineer", "Entertainment", "Banking/Consulting", "RealEstate","IntlAffairs","Undecided","SocialWork","SpeechPath","Politics", "ProSports", "Other", "Journalism", "Architecture")
+speed$race_o <-as.factor(speed$race_o) 
+speed$dec_o <- as.factor(speed$dec_o)
+speed$samerace <- as.factor(speed$samerace)
+
+sd2 <- speed
+sd2 <- sd2[ , -1] #IID  
+sd2 <- sd2[, -1] #ID  
+sd2 <- sd2[, -2] #IDG
+sd2 <- sd2[, -3] #Wave
+sd2 <- sd2[, -3] #Round
+sd2 <- sd2[, -3] #Position
+sd2 <- sd2[, -3] #Postion1
+sd2 <- sd2[, -4] #Partner 
+sd2 <- sd2[, -4] #PID
+sd2 <- sd2[, -26]#Field
+sd2 <- sd2[, -(27:29)]#Academics
+sd2 <- sd2[,-(30:32)]#Socioeconomic 
+sd2 <- sd2[,-33]#Career
+sd2 <- sd2[,-(59:64)]#What others look for
+sd2 <- sd2[,-(70:74)]#Others perception
+sd2 <- sd2[,-(81:92)]#Data gathered after intitial
+sd2 <- sd2[,(1:79)]
+sd2 <- sd2[,-(70:79)] #Removes Post First Date
+sd2 <- sd2[,-52]#exclude expnum
+
+sdrandom <- sd2[sample(nrow(sd2), nrow(sd2)),] #Get a random sample since the data is organized by participant
+
+sdclean <- na.omit(sdrandom) #Remove rows with NA values to create a "clean" set
+
+#Creating model matrix
+data <- as.data.frame(model.matrix(~. -1, data = sdclean))
+
+#removing match1
+data$match <- as.factor(data$match1)
+data$match1 <- NULL
+
+# Rescale the data
+normalize <- function(x) {
+  return((x-min(x)) / (max(x) - min(x)))
+}
+
+data <-as.data.frame(lapply(data, function(x){
+  if((class(x[1]) != "numeric") & (class(x[1]) != "integer")) {
+    return (x)
+  }
+  return(normalize(x))
+}))
+
+#setting y as a factor
+data$y <- as.factor(data$match)
+data$match <- NULL
+
+#splitting data into training and test
+train <- data[1:5199, ]
+test <- data[5200:6499, ]
+```
+#Logistic Models
+```{r}
+## 10-fold CV
+fitControl <- trainControl(method = "cv",
+                           number = 10,
+                           selectionFunction = "oneSE",
+                           verboseIter = T)
+
+
+# ===================================================
+# Logistic Models
+# ===================================================
+
+run_all_log_models = F
+
+if (run_all_log_models) {
+  log <- glm(y~., train, family = "binomial") #used binomial bc works well for binary outcomes and continuous predictors
+  #Stepped forward model
+  log_f <- colnames(train) %>%
+  {paste(.[! . %in% "y"], collapse = " + ")} %>%
+    paste("y~ ", .) %>% as.formula()
+  log_stepped <-glm(y~1, train, family = "binomial")
+  log_stepped <- step(log_stepped, scope = (log_f), direction = "forward")
+  #Boosted logistic Model
+  log_boosted <- caret::train(y ~ . , data = train,
+                              method = "LogitBoost",
+                              trcontrol = fitControl,
+                              metric = "Accuracy")
+  
+  save(log, file = "log.txt")
+  save(log_stepped, file = "log_stepped.txt")
+  save(log_boosted, file = "log_boosted.txt") 
+} else {
+  load(file = "log.txt")
+  load(file = "log_stepped.txt")
+  load(file = "log_boosted.txt") 
+}
+
+```
+
+#SVM
+```{r}
+#========================
+# SVM Models
+#========================
+
+library(kernlab)
+
+run_all_svm_models = F
+
+if (run_all_svm_models) {
+  svm_model1 <- ksvm(y~., data = train, kernel = "vanilladot")
+  svm_model2 <- ksvm(y ~ ., data = train, kernel = "rbfdot")
+
+  # #Bagged svm did not work, "said something is wrong"
+  # bagctrl <- bagControl(fit = svmBag$fit, predict = svmBag$pred, aggregate = svmBag$aggregate)
+  # set.seed(200)
+  # svmbag <- train(y ~ ., data = train, "bag",trControl = ctrl, bagControl = bagctrl)
+  
+  save(svm_model1, file = "svm_model1.txt")
+  save(svm_model2, file = "svm_model2.txt")
+} else {
+  load(file = "svm_model1.txt")
+  load(file = "svm_model2.txt")
+}
+```
+
+#KNN
+
+```{r}
+#===================
+# KNN Models
+#===================
+
+#Setting up the data
+knn_train_labels <- train[,120 ]
+knn_test_labels <- test[, 120]
+
+run_all_knn_models = F
+
+if (run_all_knn_models) {
+  knn_pred <- knn(train = train, test = test, cl = knn_train_labels, k = 3)
+  set.seed(400)
+  ctrl <- trainControl(method="repeatedcv",repeats = 3) 
+  knnFit <- train(y ~ ., data = train, method = "knn", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 20)
+  #K of 15 ended up being used
+  
+  #Save the models
+  save(knn_pred, file = "knn_pred.txt")
+  save(knnFit, file = "knnFit.txt")
+} else {
+  load(file = "knn_pred.txt")
+  load(file = "knnFit.txt")
+} 
+
+knnFit
+#Predict on tuned model
+knnPredict <- predict(knnFit,newdata = test)
+```
+
+#Neural Networks
+
+```{r}
+#==============================
+# Neural Networks
+#==============================
+library(neuralnet)
+
+nndata <- as.data.frame(model.matrix(~. +0, data = data))
+nndata$y0 <- NULL
+nndata$y <- nndata$y1
+nndata$y1 <- NULL
+
+trainNN <- nndata[1:5199, ]
+testNN <- nndata[5200:6499, ]
+
+n <- names(nndata)
+#Create Formula for all names in the dataframe
+f <- as.formula(paste("y ~", paste(n[!n %in% "y"], collapse = " + ")))
+
+run_all_nn_models = F
+
+if (run_all_nn_models) {
+  nn1 <- neuralnet(f,trainNN, hidden = 1)
+  nn3 <- neuralnet(f,trainNN, hidden = 3)
+  
+  #Save the models
+  save(nn1, file = "neural_model_1.txt")
+  save(nn3, file = "neural_model_3.txt")
+} else {
+  load(file = "neural_model_1.txt")
+  load(file = "neural_model_3.txt")
+}
+```
+
+
+#Tree Models
+```{r}
+#==============================
+# Tree based models
+#==============================
+library(party)
+library(randomForest)
+library(ada)
+
+run_all_tree_models = F
+
+if(run_all_tree_models){
+  tree_model <- ctree(y ~ ., data = train, 
+                      control = ctree_control(mincriterion = .99))
+  tree_random_forest <- randomForest(y~., data = train)
+  # Ada Tree
+  tree_ada <- ada(y~., data = train)
+  #Modify forests
+  ctrl <- trainControl(method = "repeatedcv",
+                     number = 10, repeats = 10)
+# auto-tune a random forest
+  grid_rf <- expand.grid(.mtry = c(2, 4, 8, 16))
+  set.seed(300)
+  #Modified Random Forest
+  m_rf <- train(y ~ ., data = train, method = "rf",
+              metric = "Kappa", trControl = ctrl,
+              tuneGrid = grid_rf)
+  
+  save(m_rf, file = "modified_random_forest.txt")
+  save(tree_model, file = "tree_model.txt")
+  save(tree_random_forest, file = "tree_random_forest.txt")
+  save(tree_ada, file = "tree_ada.txt")
+} else {
+  load(file = "modified_random_forest.txt")
+  load(file = "tree_model.txt")
+  load(file = "tree_random_forest.txt")
+  load(file = "tree_ada.txt")
+}
+```
+
+#Predictions
+```{r}
+#Logistic
+log_prediction <- predict(log, test, type = "response") %>%
+{ifelse(. > 0.5, "1", "0")} %>% as.factor()
+log_stepped_prediciton <- predict(log_stepped, test, type = "response")%>%
+{ifelse(. > 0.5, "1", "0")} %>% as.factor()
+log_boosted_prediction <- predict(log_boosted, test, type = "raw")
+
+#Neural Networks
+neuralnet_prediction1 <- neuralnet::compute(nn1, testNN[,1:119])$net.result %>% {ifelse(. > 0.5, "1", "0")} %>% as.factor()
+neuralnet_prediction3 <- neuralnet::compute(nn3, testNN[,1:119])$net.result %>% {ifelse(. > 0.5, "1", "0")} %>% as.factor()
+
+#Tree Based
+tree_prediction <- predict(tree_model, test)
+tree_random_forest_prediction <- predict(tree_random_forest, test)
+tree_ada_prediction <- predict(tree_ada, test)
+tree_m_rf_prediction <- predict(m_rf, test)
+```
+
+#Checking accuracy
+```{r}
+accuracy <- function(predicted, trueval, model, hideoutput = F) {
+  stopifnot(length(predicted) == length(trueval))
+  result <- sum(predicted == trueval) / length(predicted)
+  if (!hideoutput) {cat("Model:", model, "had", result, "accuracy\n")}
+  return(result)
+}
+a1 <-accuracy(knnPredict, test$y, "KNN (15)", T)
+a2 <-accuracy(knn_pred, test$y, "KNN (3)", T)
+a3 <-accuracy(log_prediction, test$y, "Log Prediction", T)
+a4 <-accuracy(log_stepped_prediciton, test$y, "Log Stepped", T)
+a5 <- accuracy(log_boosted_prediction, test$y, "Log Boosted", T)
+a6 <- accuracy(neuralnet_prediction1, testNN$y, "Neural Net (1 node)", TRUE)
+a7 <- accuracy(neuralnet_prediction3, testNN$y, "Neural Net (3 nodes)", TRUE)
+a8 = accuracy(tree_prediction, test$y, "CTree Regression", TRUE)
+a9 = accuracy(tree_random_forest_prediction, test$y, "Random Forest Classification", TRUE)
+a10 = accuracy(tree_ada_prediction, test$y, "Ada Boost Classification", TRUE)
+a11 = accuracy(tree_m_rf_prediction, test$y, "Modified Random Forest", TRUE)
+
+acc_predictions = c(a1, a2, a3, a4, a5, a6, a7, a8,a9,a10, a11)
+names = c("Tuned Knn (15)", "KNN (3)", "Log Prediction","Log Stepped", "Log Boosted", "Neural Net (1node)", "Neural Net (3nodes)", "CTree Regression","Random Forest Classification","Ada Boost Classification", "Modified Random Forest")
+
+dotchart(acc_predictions, labels = names, main = "Accuracy of the models", xlab = "Accuracy")
+```
+
+
+#Stacked Model
+This combines all the other previous models
+
+```{r}
+# ==========================================================
+# Get the various predictions for the train data
+# ==========================================================
+
+knn_pred_train <- knn(train = train, test = train, cl = knn_train_labels, k = 3)
+knnPredict_train <- predict(knnFit,newdata = train)
+log_prediction_train <- predict(log, train, type = "response") %>%
+{ifelse(. > 0.5, "1", "0")} %>% as.factor()
+log_stepped_prediction_train <- predict(log_stepped, train, type = "response")%>%
+{ifelse(. > 0.5, "1", "0")} %>% as.factor()
+log_boosted_prediction_train <- predict(log_boosted, train, type = "raw")
+neuralnet_prediction1_train <- neuralnet::compute(nn1, trainNN[,1:119])$net.result %>% {ifelse(. > 0.5, "1", "0")} %>% as.factor()
+neuralnet_prediction3_train <- neuralnet::compute(nn3, trainNN[,1:119])$net.result %>% {ifelse(. > 0.5, "1", "0")} %>% as.factor()
+tree_prediction_train <- predict(tree_model, train)
+tree_random_forest_prediction_train <- predict(tree_random_forest, train)
+tree_ada_prediction_train <- predict(tree_ada, train)
+tree_m_rf_prediction_train <- predict(m_rf, train)
+
+#Combined Model
+model_combined_results <- data.frame(log_prediction_train, log_boosted_prediction_train, log_stepped_prediction_train, knn_pred_train, knnPredict_train, neuralnet_prediction1_train, neuralnet_prediction3_train, tree_prediction_train, tree_random_forest_prediction_train, tree_ada_prediction_train, tree_m_rf_prediction_train) %>% as.tbl()
+
+# Convert all of the feature data to factors
+ConvertToYesNo <- function(myprediction) {
+  result <- myprediction %>% as.factor()
+  levels(result) <- c("no", "yes")
+  result
+}
+
+# Convert each set of predictions to factors
+knnPredict %<>% ConvertToYesNo()
+knn_pred %<>% ConvertToYesNo()
+log_prediction %<>% ConvertToYesNo()
+log_boosted_prediction %<>% ConvertToYesNo()
+log_stepped_prediciton %<>% ConvertToYesNo()
+neuralnet_prediction1 %<>% ConvertToYesNo()
+neuralnet_prediction3 %<>% ConvertToYesNo()
+tree_prediction %<>% ConvertToYesNo()
+tree_random_forest_prediction %<>% ConvertToYesNo()
+tree_ada_prediction %<>% ConvertToYesNo()
+tree_m_rf_prediction %<>% ConvertToYesNo()
+
+stacked_data <- data.frame(log_prediction, log_boosted_prediction, log_stepped_prediciton, knn_pred, knnPredict, neuralnet_prediction1, neuralnet_prediction3, tree_prediction, tree_random_forest_prediction, tree_ada_prediction, tree_m_rf_prediction) %>% as.tbl()
+
+# Swap out the names
+names(model_combined_results) <- names(stacked_data)
+
+#Stacked Ctree model
+stacked_model <- ctree(train$y ~ . + 1, data = model_combined_results, controls = ctree_control(mincriterion = .95)) %T>% plot
+
+
+#======================================
+# NEEDS TO BE DEBUGGED - i think whats happening is there is a different 
+# number of attributes in the training vs testing data, not sure what to do
+#=====================================
+
+
+stacked_model_prediction = predict(stacked_model, stacked_data, type = "response")
+# Convert the levels into something that the factors can compare
+stacked_model_prediction <- ConvertToYesNo(stacked_model_prediction)
+accuracy(stacked_model_prediction, test_data$y, "Stacked Model Accuracy")
+```
+
