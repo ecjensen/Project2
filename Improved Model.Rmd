@@ -7,6 +7,20 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+suppressPackageStartupMessages(require(plyr))
+suppressPackageStartupMessages(require(dplyr))
+suppressPackageStartupMessages(require(class))
+suppressPackageStartupMessages(require(gmodels))
+suppressPackageStartupMessages(require(stats))
+suppressPackageStartupMessages(require(party))
+suppressPackageStartupMessages(require(magrittr))
+suppressPackageStartupMessages(require(beepr))
+suppressPackageStartupMessages(require(caret))
+suppressPackageStartupMessages(library(kernlab))
+suppressPackageStartupMessages(library(neuralnet))
+suppressPackageStartupMessages(library(randomForest))
+suppressPackageStartupMessages(library(ada))
+
 ```
 
 #Cleaning up data (Given by Sanjeev)
@@ -83,7 +97,9 @@ train <- data[1:5199, ]
 test <- data[5200:6499, ]
 ```
 #Logistic Models
+
 ```{r}
+library(caret)
 ## 10-fold CV
 fitControl <- trainControl(method = "cv",
                            number = 10,
@@ -226,6 +242,8 @@ if (run_all_nn_models) {
 library(party)
 library(randomForest)
 library(ada)
+library(dplyr)
+library(class)
 
 run_all_tree_models = F
 
@@ -333,7 +351,7 @@ model_combined_results <- data.frame(log_prediction_train, log_boosted_predictio
 # Convert all of the feature data to factors
 ConvertToYesNo <- function(myprediction) {
   result <- myprediction %>% as.factor()
-  levels(result) <- c("no", "yes")
+  levels(result) <- c("0", "1")
   result
 }
 
@@ -358,16 +376,41 @@ names(model_combined_results) <- names(stacked_data)
 #Stacked Ctree model
 stacked_model <- ctree(train$y ~ . + 1, data = model_combined_results, controls = ctree_control(mincriterion = .95)) %T>% plot
 
-
-#======================================
-# NEEDS TO BE DEBUGGED - i think whats happening is there is a different 
-# number of attributes in the training vs testing data, not sure what to do
-#=====================================
-
-
 stacked_model_prediction = predict(stacked_model, stacked_data, type = "response")
 # Convert the levels into something that the factors can compare
 stacked_model_prediction <- ConvertToYesNo(stacked_model_prediction)
-accuracy(stacked_model_prediction, test_data$y, "Stacked Model Accuracy")
+accuracy(stacked_model_prediction, test$y, "Stacked Model Accuracy")
+
+#Good model can talk about how the low knn is helping the model
+plot(stacked_model)
+```
+
+
+#Cost model 
+
+```{r}
+#decision tree
+#lots of dates vs not bad dates 
+#startup vs match.com
+library(C50)
+#Adding Error Costs
+
+#This increases total number of matches, flip matrix to be more selective on matches
+error_cost <- matrix(c(0, 1, 20, 0), nrow = 2)
+
+#Cost Model
+cost_stacked_model <- C5.0(train$y ~ . + 1, data = model_combined_results, costs = error_cost)
+
+#Cost Prediction
+cost_model_prediction = predict(cost_stacked_model, stacked_data, type = "class")
+
+accuracy(cost_model_prediction, test$y, "Stacked Model Accuracy")
+
+#comparing to previous model
+confusionMatrix(cost_model_prediction, test$y)
+confusionMatrix(stacked_model_prediction, test$y)
+```
+
+
 ```
 
