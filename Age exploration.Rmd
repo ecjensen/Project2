@@ -76,7 +76,6 @@ Age profile of people who participated in the events
 summary(explore$age)
 ggplot(explore, aes(x=age , fill=gender))+ geom_histogram() + ggtitle("Age Distribution") + xlab("Participant Age Group")
 
-table(explore.age$participant.age.group)
 ```
 
 Divide age of participants into <25, 25-30, 31-35, 36-40, 41-50, >50
