@@ -384,33 +384,88 @@ accuracy(stacked_model_prediction, test$y, "Stacked Model Accuracy")
 #Good model can talk about how the low knn is helping the model
 plot(stacked_model)
 ```
+From the stacked model, we can see that tree_m_rf_prediction from the tree random forest model mostly made a call whether the couple is going to match or not. However, KNN model will becomes a decision call when tree_m_rf_prediction predict no and KNN predict yes. In this case, the stacked model predict that the couple is going to match. 
 
 
-#Cost model 
+##Cost model 
+
+#Cost model in a start-up stage
+
+We further improve the decision tree model by assigning the cost matrix. As this okMatch is a startup business, we would want to set the primary goal to match as many people as possible. In other words, we can accept some positive error (the bad dates), that is, the couple is not actually match, but our platform predicts that they are going to match, if that means we can generate the most match possible (true positive).
 
 ```{r}
 #decision tree
-#lots of dates vs not bad dates 
+#Determine lots of matching to maximum no. of dates (False positive) VS determine lots of corrected matching on the expense of some possible match missed (False negative)
 #startup vs match.com
 library(C50)
 #Adding Error Costs
 
 #This increases total number of matches, flip matrix to be more selective on matches
-error_cost <- matrix(c(0, 1, 20, 0), nrow = 2)
+error_cost_max_match <- matrix(c(0, 1, 20, 0), nrow = 2)
 
-#Cost Model
-cost_stacked_model <- C5.0(train$y ~ . + 1, data = model_combined_results, costs = error_cost)
+#Cost Model maximum the number of matching as an expense with false positive
+cost_stacked_model_max_match <- C5.0(train$y ~ . + 1, data = model_combined_results, costs = error_cost_max_match)
 
-#Cost Prediction
-cost_model_prediction = predict(cost_stacked_model, stacked_data, type = "class")
+#Prediction
+cost_model_prediction_max_match = predict(cost_stacked_model_max_match, stacked_data, type = "class")
 
-accuracy(cost_model_prediction, test$y, "Stacked Model Accuracy")
+accuracy(cost_model_prediction_max_match, test$y, "Stacked Model Accuracy")
 
 #comparing to previous model
-confusionMatrix(cost_model_prediction, test$y)
+confusionMatrix(cost_model_prediction_max_match, test$y)
 confusionMatrix(stacked_model_prediction, test$y)
 ```
 
+Accuracy of cost_model_prediction_max_match decrease, but the True Positive (Number of match that we predicted correctly) increase. 
+
+Let's see what happens if we change the weight in the cost matrix
+
+
+Our client can adjust this cost matrix when they transition from startup phase into more mature speed dating company. For example, they might want people to have a "good dates", and actually match, on the expense of some actual match got misclassified into not match (False negative). 
+```{r}
+#This increases total number of matches, flip matrix to be more selective on matches
+error_cost_max_match2 <- matrix(c(0, 1, 30, 0), nrow = 2)
+
+#Cost Model maximum the number of matching as an expense with false positive
+cost_stacked_model_max_match2 <- C5.0(train$y ~ . + 1, data = model_combined_results, costs = error_cost_max_match2)
+
+#Prediction
+cost_model_prediction_max_match2 = predict(cost_stacked_model_max_match2, stacked_data, type = "class")
+
+accuracy(cost_model_prediction_max_match2, test$y, "Stacked Model2 Accuracy")
+
+#comparing to previous model
+
+confusionMatrix(cost_model_prediction_max_match2, test$y)
+confusionMatrix(cost_model_prediction_max_match, test$y)
+confusionMatrix(stacked_model_prediction, test$y)
 
 ```
 
+Using cost_model_prediction_max_match2, in which the cost to misclassify the couple as not match is 30 times the cost that we misclassify the couple as match, the case of false negative reduced to 8, and the case of true positive increases to 225. However, the false positive case increase almost two times from the cost_model_prediction_max_match. We deemed that this is not a beneficial trade-off and recommend clients to use cost_model_prediction_max_match in their start-up stage. 
+
+#Cost model in a mature stage
+
+When the platform has been recognized, and client can build an extensive customer base, then we start to consider shifting the weight in cost matrix. This time, we want our platform to be reliable in generating "good dates". In other words, we want to be more accurate on our matching prediction with expense of missing some matches. In other words, we want to minimize the false positive.
+
+```{r}
+#This increases total number of matches, flip matrix to be more selective on matches
+error_cost_min_FP <- matrix(c(0, 3, 1, 0), nrow = 2)
+
+#Cost Model maximum the number of matching as an expense with false positive
+cost_stacked_min_FP <- C5.0(train$y ~ . + 1, data = model_combined_results, costs = error_cost_min_FP)
+
+#Prediction
+cost_model_prediction_min_FP = predict(cost_stacked_min_FP, stacked_data, type = "class")
+
+accuracy(cost_model_prediction_min_FP, test$y, "Stacked Model3 Accuracy")
+
+#comparing to previous model
+
+confusionMatrix(cost_model_prediction_min_FP, test$y)
+confusionMatrix(cost_model_prediction_max_match, test$y)
+confusionMatrix(stacked_model_prediction, test$y)
+
+```
+Assigning cost of misclassifying the  actual unmatched to matched as 3 times of misclassifying the actual matched to unmatched, we have the accuracy of 0.96, and Kappa of 0.8563 which is an improvement from the previous two models. It reduces the false positive by approximately 10 times, but increase the false negative by approximately 2 times from the other two models. 
+We recommend cost_model_prediction_min_FP if our client want to generate reputation of creating an event that people can find their match easier, not to generate the most matching in one night. 
