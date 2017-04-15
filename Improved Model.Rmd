@@ -421,12 +421,12 @@ Accuracy of cost_model_prediction_max_match decrease, but the True Positive (Num
 Let's see what happens if we change the weight in the cost matrix
 
 
-Our client can adjust this cost matrix when they transition from startup phase into more mature speed dating company. For example, they might want people to have a "good dates", and actually match, on the expense of some actual match got misclassified into not match (False negative). 
+Our client can adjust this cost matrix when they transit from startup phase into more mature speed dating company. For example, they might want people to find a good dates easier, as opposed to going through a lot of people in that evening to find a date, with the expense of some actual match got misclassified into not match (False negative). 
 ```{r}
-#This increases total number of matches, flip matrix to be more selective on matches
-error_cost_max_match2 <- matrix(c(0, 1, 30, 0), nrow = 2)
+#
+error_cost_max_match2 <- matrix(c(0, 30, 1, 0), nrow = 2)
 
-#Cost Model maximum the number of matching as an expense with false positive
+#
 cost_stacked_model_max_match2 <- C5.0(train$y ~ . + 1, data = model_combined_results, costs = error_cost_max_match2)
 
 #Prediction
