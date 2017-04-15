@@ -89,6 +89,7 @@ explore.age$participant.age.group <- as.factor(ifelse(explore$age<25, "<25",
                                         ifelse(explore$age<51,"41-50",">50"))))))
 #See the distribution of each age group
 plot(explore.age$participant.age.group)
+table(explore.age$participant.age.group)
 
 
 #To calculate percentage of matching easier, convert "Yes" and "No" into numerical value 0,1
