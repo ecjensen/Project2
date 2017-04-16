@@ -2,7 +2,14 @@
 title: "Final Project!"
 author: "Eric Jensen"
 date: "April 15, 2017"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    theme: united
+    highlight: tango
 ---
 
 ```{r setup, include=FALSE}
@@ -110,6 +117,8 @@ test <- data[5200:6499, ]
 ```
 
 ```{r}
+explore <- sdclean1
+
 explore$match <- as.numeric(ifelse(explore$match == 1,1,0))
 
 month.match.ratio <- explore %>% group_by(gender, month) %>% summarise(match.prop = mean(match))
@@ -202,10 +211,10 @@ cor(age.match$age, age.match$age_o)
 There is not much correlation between age of participants and age of partners.In fact, participants aged 55 matched with partners from age 20-40.
 
 ```{r}
+explore$match <- as.numeric(ifelse(explore$match == 1,1,0))
+race.match.ratio <- explore  %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
 
-explore.match.ratio <- explore  %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
-
-ggplot(explore.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
+ggplot(race.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
 
 Black <- subset(explore, explore$race == 1)
 White <- subset(explore, explore$race == 2)
@@ -218,35 +227,34 @@ black.match.ratio <- Black %>% group_by(gender, race_o) %>% summarise(match.prop
 
 ggplot(black.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
 
+```
+Black people are the most likely to match and are significantly more likely to match with each other.
+
+```{r}
 white.match.ratio <- White %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
 
 ggplot(white.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
+```
+
+White males are most likely to match with white women buut white women match with all other races proportionally higher other than asian and native american
+
+```{r}
 
 latino.match.ratio <- Latino %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
 
 ggplot(latino.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
 
-asian.match.ratio <- Asian %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
-
-ggplot(asian.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
-
-native.match.ratio <- Native %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
-
-ggplot(native.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
-
-other.match.ratio <- Other %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
-
-ggplot(other.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
 ```
-Black people are the most likely to match and are significantly more likely to match with each other.
-
-White males are most likely to match with white women buut white women match with all other races proportionally higher other than asian and native american
 
 Latino women match proportionally the highest with "other" men and black men. The other men statistic might be an anomaly because of a low sample size. Ignoring, other the same race trend continues. 
 
+```{r}
+asian.match.ratio <- Asian %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
+
+ggplot(asian.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
+```
+
 Asians do not match with other Asians at the same race. As appeared with the aggregate, they are most likely to match with black people.
-
-
 
 ```{r}
 career.match.ratio <- explore %>% group_by(gender, career_c ) %>% summarise(match.prop = mean(match))
@@ -540,7 +548,6 @@ stacked_model_prediction <- ConvertToYesNo(stacked_model_prediction)
 accuracy(stacked_model_prediction, test$y, "Stacked Model Accuracy")
 
 #Good model can talk about how the low knn is helping the model
-pdf("mygraph.pdf", width = 11, height = 8)
 plot(stacked_model)
 
 ```
