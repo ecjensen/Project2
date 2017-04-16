@@ -269,6 +269,7 @@ career.match.ratio <- explore %>% group_by(gender, career_c ) %>% summarise(matc
 
 ggplot(career.match.ratio, aes(x = career_c, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Participant Career Group") + theme(axis.text.x = element_text(angle = 90, hjust=1))
 ```
+Interestingly, the male psychologist has the staggering matching probability of 0.6. Maybe it's due to their knowledge in psychology to boost their charm. 
 
 
 ##Machine learning to predict if two people will match or not
