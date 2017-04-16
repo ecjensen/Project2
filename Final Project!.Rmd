@@ -170,7 +170,7 @@ explore$gender <- factor(explore$gender, levels = c(0, 1), labels = c("Female", 
 Age profile of people who participated in the events
 ```{r}
 summary(explore$age)
-ggplot(explore, aes(x=age , fill=gender))+ geom_histogram() + ggtitle("Age Distribution") + xlab("Participant Age Group")
+ggplot(explore, aes(x=age , fill=gender))+ geom_histogram() + ggtitle("Age Distribution") + xlab("Age")
 
 ```
 
@@ -184,7 +184,7 @@ explore.age$participant.age.group <- as.factor(ifelse(explore$age<25, "<25",
                                         ifelse(explore$age<41, "36-40",
                                         ifelse(explore$age<51,"41-50",">50"))))))
 #See the distribution of each age group
-plot(explore.age$participant.age.group)
+ggplot(explore.age, aes(x=participant.age.group , fill=gender))+ geom_histogram() + ggtitle("Age Distribution") + xlab("Participant Age Group")
 table(explore.age$participant.age.group)
 
 
