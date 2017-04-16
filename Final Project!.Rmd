@@ -262,6 +262,7 @@ career.match.ratio <- explore %>% group_by(gender, career_c ) %>% summarise(matc
 ggplot(career.match.ratio, aes(x = career_c, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Participant Career Group") + theme(axis.text.x = element_text(angle = 90, hjust=1))
 ```
 
+#This part shows about how match rate related to Careers. 
 ```{r}
 #Calculate the probability of match for each career
 table(sdclean$career_c, sdclean$match)
