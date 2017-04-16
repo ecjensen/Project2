@@ -33,7 +33,7 @@ suppressPackageStartupMessages(library(e1071))
 
 ```
 
-#Cleaning up data
+##Data cleaning
 ```{r}
 speed <- read.csv("Speed Dating Data.csv")
 speed$condtn <- as.factor(speed$condtn)
@@ -116,6 +116,7 @@ train <- data[1:5199, ]
 test <- data[5200:6499, ]
 ```
 
+##Matching based on month
 ```{r}
 explore <- sdclean1
 
@@ -154,7 +155,7 @@ ggplot(exhappy.match.ratio, aes(x = exphappy, y = match.prop, fill = gender)) + 
 
 Men who go into a date expected to no be happy with their partners are much more likely to match. This could be an issue of low sample size, or they don't expect anything with their partners so they'll match with anyone. 
 
-#Variable exploration
+##Variable exploration
 ```{r}
 explore <- sdclean
 names(explore)
@@ -164,7 +165,7 @@ explore$gender <- factor(explore$gender, levels = c(0, 1), labels = c("Female", 
 
 ```
 
-#Matching based on age
+##Matching based on age
 
 Age profile of people who participated in the events
 ```{r}
@@ -174,6 +175,7 @@ ggplot(explore, aes(x=age , fill=gender))+ geom_histogram() + ggtitle("Age Distr
 ```
 
 Divide age of participants into <25, 25-30, 31-35, 36-40, 41-50, >50
+
 ```{r}
 explore.age <- explore
 explore.age$participant.age.group <- as.factor(ifelse(explore$age<25, "<25",
@@ -209,6 +211,9 @@ cor(age.match$age, age.match$age_o)
 ```
 
 There is not much correlation between age of participants and age of partners.In fact, participants aged 55 matched with partners from age 20-40.
+
+
+##Matching based on race
 
 ```{r}
 explore$match <- as.numeric(ifelse(explore$match == 1,1,0))
@@ -256,13 +261,15 @@ ggplot(asian.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom
 
 Asians do not match with other Asians at the same race. As appeared with the aggregate, they are most likely to match with black people.
 
+
+##Matching based on careers
+
 ```{r}
 career.match.ratio <- explore %>% group_by(gender, career_c ) %>% summarise(match.prop = mean(match))
 
 ggplot(career.match.ratio, aes(x = career_c, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Participant Career Group") + theme(axis.text.x = element_text(angle = 90, hjust=1))
 ```
 
-#This part shows about how match rate related to Careers. 
 ```{r}
 #Calculate the probability of match for each career
 table(sdclean$career_c, sdclean$match)
@@ -307,6 +314,7 @@ c
 #and ProSports has the highest rate of match. 
 ```
 
+##Machine learning to predict if two people will match or not
 #Logistic Models
 ```{r}
 library(caret)
@@ -315,8 +323,7 @@ fitControl <- trainControl(method = "cv",
                            number = 10,
                            selectionFunction = "oneSE",
                            verboseIter = T)
-
-
+                       
 # ===================================================
 # Logistic Models
 # ===================================================
@@ -533,7 +540,7 @@ dotchart(acc_predictions, labels = names, main = "Accuracy of the models", xlab 
 ```
 
 
-#Stacked Model
+##Stacked Model
 This combines all the other previous models
 
 ```{r}
@@ -628,7 +635,7 @@ confusionMatrix(stacked_model_prediction, test$y)
 
 Accuracy of cost_model_prediction_max_match decrease, but the True Positive (Number of match that we predicted correctly) increase. 
 
-Let's see what happens if we change the weight in the cost matrix
+Lets see what happens if we change the weight in the cost matrix
 
 ```{r}
 #This increases total number of matches, flip matrix to be more selective on matches
