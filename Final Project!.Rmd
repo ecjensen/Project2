@@ -184,7 +184,7 @@ explore.age$participant.age.group <- as.factor(ifelse(explore$age<25, "<25",
                                         ifelse(explore$age<41, "36-40",
                                         ifelse(explore$age<51,"41-50",">50"))))))
 #See the distribution of each age group
-ggplot(explore.age, aes(x=participant.age.group , fill=gender))+ geom_histogram() + ggtitle("Age Distribution") + xlab("Participant Age Group")
+plot(explore.age$participant.age.group, main = "Distribution of participation age group")
 table(explore.age$participant.age.group)
 
 
