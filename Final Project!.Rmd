@@ -262,6 +262,49 @@ career.match.ratio <- explore %>% group_by(gender, career_c ) %>% summarise(matc
 ggplot(career.match.ratio, aes(x = career_c, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Participant Career Group") + theme(axis.text.x = element_text(angle = 90, hjust=1))
 ```
 
+```{r}
+#Calculate the probability of match for each career
+table(sdclean$career_c, sdclean$match)
+
+pLawyer <- 111/(426+111)
+pAcademic <- 310/(310+1619)
+pPsychologist <- 38/(142+38)
+pDocMed <- 62/(272+62)
+pEngineer <- 31/(31+156)
+pEntertainment <- 92/(92+460)
+pBanking <- 307/(307+1351)
+pRealEstate <- 4/(4+13)
+pIntlAffairs <- 70/(70+372)
+pUndecided <- 40/(40+255)
+pSocialWork <- 31/(31+136)
+pSpeechPath <- 1/(25+1)
+pPolitics <- 3/(3+60)
+pProSports <- 2/(6+2)
+pOther <- 10/(50+10)
+pJournalism <- 6/(30+6)
+pArchiecture <- 1/(7+1)
+
+#Combine the probabilities to make plot
+p <- c(pLawyer,pAcademic,pPsychologist,pDocMed,pEngineer,pEntertainment,pBanking,pRealEstate,
+       pIntlAffairs,pUndecided,pSocialWork,pSpeechPath,pPolitics,pProSports,pOther,
+       pJournalism,pArchiecture)
+
+c <- c("Lawyer","Academic","Psychologist","DocMed","Engineer","Entertainment","Banking","RealEstate",
+       "IntlAffairs","Undecided","SocialWork","SpeechPath","Politics","ProSports","Other",
+       "Journalism","Archiecture")
+
+#Use barplot to plot the probability 
+cols <- c("White", "DarkGrey","yellow", "Red", "Pink","Orange", "Blue", "Green", "Black", "Purple",
+          "DarkRed", "DarkBlue", "DarkGreen", "LightGrey", "DarkOrange", "LightBlue", "LightYellow")
+b <- barplot(p,main = "Probability of Match by Career", col=cols)
+text(b, 0, round(p, 2),cex=0.5,pos=3)
+
+c
+#c is the career position in the barplot 
+
+#This shows SpeechPath and Poltics has low probaility to match comparing to others, 
+#and ProSports has the highest rate of match. 
+```
 
 #Logistic Models
 ```{r}
