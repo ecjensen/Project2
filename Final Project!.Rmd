@@ -1,6 +1,6 @@
 ---
 title: "Final Project"
-author: "Team Dragon: Eric Jensen, Blake polozo, Oranich Boondiskulchok,  Juan Rodriguez, and Xuanyi Liu"
+author: "Team Dragon: Eric Jensen, Blake Pozolo, Oranich Boondiskulchok,  Juan Rodriguez, and Xuanyi Liu"
 date: "April 15, 2017"
 output:
   html_document:
