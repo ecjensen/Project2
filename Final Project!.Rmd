@@ -491,6 +491,8 @@ dotchart(acc_predictions, labels = names, main = "Accuracy of the models", xlab 
 ```
 
 Best models were modified random forest and random forest classification.
+
+
 #Stacked Model
 This combines all the other previous models
 
