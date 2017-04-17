@@ -1,6 +1,6 @@
 ---
-title: "Final Project!"
-author: "Eric Jensen"
+title: "Final Project"
+author: "Team Dragon: Eric Jensen, Blake polozo, Oranich Boondiskulchok,  Juan Rodriguez, and Xuanyi Liu"
 date: "April 15, 2017"
 output:
   html_document:
@@ -33,7 +33,7 @@ suppressPackageStartupMessages(library(e1071))
 
 ```
 
-##Data cleaning
+#Cleaning up data
 ```{r}
 speed <- read.csv("Speed Dating Data.csv")
 speed$condtn <- as.factor(speed$condtn)
@@ -75,6 +75,7 @@ sd2 <- sd2[,(1:79)]
 sd2 <- sd2[,-(70:79)] #Removes Post First Date
 sd2 <- sd2[,-52]#exclude expnum
 sd3 <- cbind(sd2, speed[, 6])
+sd4 <- sd2
 
 sdrandom <- sd2[sample(nrow(sd2), nrow(sd2)),] #Get a random sample since the data is organized by participant
 sdrandom1 <-sd3[sample(nrow(sd3), nrow(sd3)),]
@@ -85,6 +86,7 @@ sdclean1 <- na.omit(sdrandom1)
 names(sdclean1)[69] <- "wave"
 sdclean1[, 69] <- as.factor(sdclean1[, 69])
 
+#Adding month given wave period
 sdclean1$month <- ifelse(sdclean1$wave == 1, "October", ifelse(sdclean1$wave == 2, "October", ifelse(sdclean1$wave == 3, "November", ifelse(sdclean1$wave == 4, "November", ifelse(sdclean1$wave == 5, "November", ifelse(sdclean1$wave == 6, "March", ifelse(sdclean1$wave == 7, "March", ifelse(sdclean1$wave == 8, "April", ifelse(sdclean1$wave == 9, "April", ifelse(sdclean1$wave == 10, "September", ifelse(sdclean1$wave == 11, "September", ifelse(sdclean1$wave == 12, "October", ifelse(sdclean1$wave == 13, "October", ifelse(sdclean1$wave == 14, "October", ifelse(sdclean1$wave == 15, "February", ifelse(sdclean1$wave == 16, "February", ifelse(sdclean1$wave == 17, "February", ifelse(sdclean1$wave == 18, "April", ifelse(sdclean1$wave == 19, "April", ifelse(sdclean1$wave == 20, "April",ifelse(sdclean1$wave == 21, "April", NA
                         )))))))))))))))))))))
 
@@ -116,38 +118,39 @@ train <- data[1:5199, ]
 test <- data[5200:6499, ]
 ```
 
-##Matching based on month
+#Matching Based on Month
 ```{r}
-explore <- sdclean1
+explore <- sdclean1 #Adding separate variable
 
-explore$match <- as.numeric(ifelse(explore$match == 1,1,0))
+explore$match <- as.numeric(ifelse(explore$match == 1,1,0)) #adjusting match
 
-month.match.ratio <- explore %>% group_by(gender, month) %>% summarise(match.prop = mean(match))
+month.match.ratio <- explore %>% group_by(gender, month) %>% summarise(match.prop = mean(match)) #Segmenting out by month and gender
 
 ggplot(month.match.ratio, aes(x = month, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Month")
 
 ```
 Individuals, particularly women, are more likely to match in November than in any other month. This is likely in anticipation of the holiday season. Knowing this, okMatch should look into providing dating rounds in December to take advantage of this season of higher matching.
 
+#Matching Based on Interest Correlation
 ```{r}
 explore$int_corr <- as.factor(ifelse(explore$int_corr < -0.3355, "<.05",
                                         ifelse(explore$int_corr< .1965, " < .5", 
-                                        ifelse(explore$int_corr <.655 , ">.5", ">.95"))))
+                                        ifelse(explore$int_corr <.655 , ">.5", ">.95")))) #Relabling interest correlation by quantile
 
-int.match.ratio <- explore %>% group_by(gender, int_corr) %>% summarise(match.prop = mean(match))
+int.match.ratio <- explore %>% group_by(gender, int_corr) %>% summarise(match.prop = mean(match)) #Subsetting gender and interest correlation
 
 ggplot(int.match.ratio, aes(x = int_corr, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Level of Interest Correlation")
 ```
 
 You would think that matching would be proportional to the level of interest correlation but that isn't true! With women in particular, if you have an interest correlation of below 5%, you are still more likely to match than any other group other than an interest correlation of 95% or higher.
 
-#Predate attitude
+#Matching Based on Expected Happiness with Dates
 ```{r}
 explore$exphappy <- as.factor(ifelse(explore$exphappy < 2, "<.05",
                                         ifelse(explore$exphappy< 5.5, " < .5", 
-                                        ifelse(explore$exphappy <8 , ">.5", ">.95"))))
+                                        ifelse(explore$exphappy <8 , ">.5", ">.95")))) #Segmenting expected happiness
 
-exhappy.match.ratio <- explore %>% group_by(gender, exphappy) %>% summarise(match.prop = mean(match))
+exhappy.match.ratio <- explore %>% group_by(gender, exphappy) %>% summarise(match.prop = mean(match))#Subsetting expected happiness by gender
 
 ggplot(exhappy.match.ratio, aes(x = exphappy, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Level of Expected Happiness")
 
@@ -155,27 +158,16 @@ ggplot(exhappy.match.ratio, aes(x = exphappy, y = match.prop, fill = gender)) + 
 
 Men who go into a date expected to no be happy with their partners are much more likely to match. This could be an issue of low sample size, or they don't expect anything with their partners so they'll match with anyone. 
 
-##Variable exploration
-```{r}
-explore <- sdclean
-names(explore)
-
-explore$gender <- factor(explore$gender, levels = c(0, 1), labels = c("Female", "Male"))
-
-
-```
-
-##Matching based on age
+#Matching Based on Age
 
 Age profile of people who participated in the events
 ```{r}
 summary(explore$age)
-ggplot(explore, aes(x=age , fill=gender))+ geom_histogram() + ggtitle("Age Distribution") + xlab("Age")
+ggplot(explore, aes(x=age , fill=gender))+ geom_histogram() + ggtitle("Age Distribution") + xlab("Participant Age Group")
 
 ```
 
 Divide age of participants into <25, 25-30, 31-35, 36-40, 41-50, >50
-
 ```{r}
 explore.age <- explore
 explore.age$participant.age.group <- as.factor(ifelse(explore$age<25, "<25",
@@ -183,8 +175,9 @@ explore.age$participant.age.group <- as.factor(ifelse(explore$age<25, "<25",
                                         ifelse(explore$age<36, "31-35",
                                         ifelse(explore$age<41, "36-40",
                                         ifelse(explore$age<51,"41-50",">50"))))))
+
 #See the distribution of each age group
-plot(explore.age$participant.age.group, main = "Distribution of participation age group")
+plot(explore.age$participant.age.group)
 table(explore.age$participant.age.group)
 
 
@@ -212,15 +205,14 @@ cor(age.match$age, age.match$age_o)
 
 There is not much correlation between age of participants and age of partners.In fact, participants aged 55 matched with partners from age 20-40.
 
-
-##Matching based on race
-
+#Matching Based on Race
 ```{r}
 explore$match <- as.numeric(ifelse(explore$match == 1,1,0))
 race.match.ratio <- explore  %>% group_by(gender, race_o) %>% summarise(match.prop = mean(match))
 
 ggplot(race.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
 
+#Subsetting based on race
 Black <- subset(explore, explore$race == 1)
 White <- subset(explore, explore$race == 2)
 Latino <- subset(explore, explore$race == 3)
@@ -241,7 +233,7 @@ white.match.ratio <- White %>% group_by(gender, race_o) %>% summarise(match.prop
 ggplot(white.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Race")
 ```
 
-White males are most likely to match with white women buut white women match with all other races proportionally higher other than asian and native american
+White males are most likely to match with white women but white women match with all other races proportionally higher other than asian and native american
 
 ```{r}
 
@@ -261,18 +253,15 @@ ggplot(asian.match.ratio, aes(x = race_o, y = match.prop, fill = gender)) + geom
 
 Asians do not match with other Asians at the same race. As appeared with the aggregate, they are most likely to match with black people.
 
-
-##Matching based on careers
-
+#Matching Based on Career
 ```{r}
+#Subsetting based on career
 career.match.ratio <- explore %>% group_by(gender, career_c ) %>% summarise(match.prop = mean(match))
 
 ggplot(career.match.ratio, aes(x = career_c, y = match.prop, fill = gender)) + geom_col(position = "dodge")+ ylab("Matching Probability") + xlab("Participant Career Group") + theme(axis.text.x = element_text(angle = 90, hjust=1))
 ```
-Interestingly, the male psychologist has the staggering matching probability of 0.6. Maybe it's due to their knowledge in psychology to boost their charm. 
 
 
-##Machine learning to predict if two people will match or not
 #Logistic Models
 ```{r}
 library(caret)
@@ -281,12 +270,13 @@ fitControl <- trainControl(method = "cv",
                            number = 10,
                            selectionFunction = "oneSE",
                            verboseIter = T)
-                       
+
+
 # ===================================================
 # Logistic Models
 # ===================================================
 
-run_all_log_models = F
+run_all_log_models = F #Change to create own model
 
 if (run_all_log_models) {
   log <- glm(y~., train, family = "binomial") #used binomial bc works well for binary outcomes and continuous predictors
@@ -296,7 +286,8 @@ if (run_all_log_models) {
     paste("y~ ", .) %>% as.formula()
   log_stepped <-glm(y~1, train, family = "binomial")
   log_stepped <- step(log_stepped, scope = (log_f), direction = "forward")
-  #Boosted logistic Model
+ 
+   #Boosted logistic Model
   log_boosted <- caret::train(y ~ . , data = train,
                               method = "LogitBoost",
                               trcontrol = fitControl,
@@ -321,8 +312,9 @@ if (run_all_log_models) {
 
 library(kernlab)
 
-run_all_svm_models = F
+run_all_svm_models = F #change to create own model
 
+#Running SVM models
 if (run_all_svm_models) {
   svm_model1 <- ksvm(y~., data = train, kernel = "vanilladot")
   svm_model2 <- ksvm(y ~ ., data = train, kernel = "rbfdot")
@@ -348,9 +340,10 @@ if (run_all_svm_models) {
 #===================
 
 #Setting up the data
-knn_train_labels <- train[,120 ]
-knn_test_labels <- test[, 120]
+knn_train_labels <- train[,120]
+knn_test_labels <- test[,120]
 
+#Running KNN models
 run_all_knn_models = F
 
 if (run_all_knn_models) {
@@ -497,8 +490,8 @@ names = c("Tuned Knn (15)", "KNN (3)", "Log Prediction","Log Stepped", "Log Boos
 dotchart(acc_predictions, labels = names, main = "Accuracy of the models", xlab = "Accuracy")
 ```
 
-
-##Stacked Model
+Best models were modified random forest and random forest classification.
+#Stacked Model
 This combines all the other previous models
 
 ```{r}
@@ -593,7 +586,7 @@ confusionMatrix(stacked_model_prediction, test$y)
 
 Accuracy of cost_model_prediction_max_match decrease, but the True Positive (Number of match that we predicted correctly) increase. 
 
-Lets see what happens if we change the weight in the cost matrix
+Let's see what happens if we change the weight in the cost matrix
 
 ```{r}
 #This increases total number of matches, flip matrix to be more selective on matches
@@ -642,3 +635,10 @@ confusionMatrix(stacked_model_prediction, test$y)
 ```
 Assigning cost of misclassifying the  actual unmatched to matched as 3 times of misclassifying the actual matched to unmatched, we have the accuracy of 0.96, and Kappa of 0.8563 which is an improvement from the previous two models. It reduces the false positive by approximately 10 times, but increase the false negative by approximately 2 times from the other two models. 
 We recommend cost_model_prediction_min_FP if our client want to generate reputation of creating an event that people can find their match easier, not to generate the most matching in one night. 
+
+#Recommendations
+1. We recommend that OkMatch.com add more waves to November and December as individuals match at a higher rate during those months. This is likely due to the increased pressure to have a companion during the holidays. 
+2. We recommend that OkMatch.com also recruit more males aged 41-50. They were the most likely age group to match. Unlike other participants, they are more likely to have money and either of no children or have children who no longer require constant care.
+3. OkMatch.com should also look into finding more males who have lower expectations as they are the most likely to match within the expected happiness category. 
+4. OkMatch.com should put less stress on matching interests because it did not have a significant impact on whether they match. 
+
